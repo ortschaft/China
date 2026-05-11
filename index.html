@@ -1,1 +1,197 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>China - Das Reich der Mitte</title>
+    <style>
+        body { 
+            margin: 0; padding: 0;
+            font-family: 'Segoe UI', Arial, sans-serif; 
+            color: white; background-color: #0a0a0a;
+            scroll-behavior: smooth; overflow-x: hidden;
+        }
 
+        section {
+            min-height: 100vh; display: none; flex-direction: column;
+            align-items: center; justify-content: center; text-align: center;
+            padding: 40px; box-sizing: border-box; position: relative;
+            background-size: cover; background-position: center; background-attachment: fixed;
+        }
+
+        /* Start- und Infoseite */
+        .hero { display: flex; background-image: linear-gradient(rgba(0,0,0,0.6), rgba(0,0,0,0.6)), url('HIER_HERO_BILD_URL'); }
+        .info { background-image: linear-gradient(rgba(0,0,0,0.7), rgba(0,0,0,0.7)), url('HIER_INFO_BILD_URL'); }
+        .victory-bg { background-image: linear-gradient(rgba(0,0,0,0.9), rgba(0,0,0,0.9)), url('HIER_SIEG_BILD_URL'); }
+
+        /* BUTTON DESIGN: ROT MIT GELBER SCHRIFT */
+        .btn {
+            padding: 22px 50px;
+            background: #EE1C25; /* China Rot */
+            color: #FFFF00; /* Gelb */
+            text-decoration: none;
+            border-radius: 5px;
+            font-weight: bold; font-size: 1.3rem;
+            transition: 0.3s; display: inline-block;
+            margin: 15px; border: 2px solid #FFFF00;
+            cursor: pointer; position: relative; overflow: hidden;
+        }
+
+        .btn:hover { background-color: #c4141b; transform: scale(1.05); }
+
+        /* GELBE WELLEN ANIMATION */
+        .btn::after {
+            content: ''; position: absolute; top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255, 255, 0, 0.4), transparent);
+            animation: wave 3s infinite linear;
+        }
+
+        /* SPEZIAL-BUTTON NACH PIN: GELB MIT ROTER SCHRIFT */
+        .btn-secret {
+            background: #FFFF00 !important;
+            color: #EE1C25 !important;
+            border: 2px solid #EE1C25 !important;
+        }
+        .btn-secret::after {
+            background: linear-gradient(90deg, transparent, rgba(238, 28, 37, 0.4), transparent) !important;
+        }
+
+        @keyframes wave { 0% { left: -100%; } 100% { left: 100%; } }
+
+        /* MAO OVERLAY */
+        #mao-overlay {
+            display: none; position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: url('https://th.bing.com/th/id/OIP._JpQzfKa50wxe9w197t2aQHaEK?w=203&h=114&c=7&r=0&o=7&pid=1.7&rm=3') center center no-repeat;
+            background-size: contain; background-color: black;
+            z-index: 1000;
+        }
+
+        .container { max-width: 900px; }
+    </style>
+</head>
+<body>
+
+    <audio id="hintergrundmusik" loop><source src="china_music.mp3" type="audio/mpeg"></audio>
+    <div id="mao-overlay"></div>
+
+    <section class="hero" id="hero">
+        <h1>China: Das Reich der Mitte</h1>
+        <p>Meistere 20 Fragen über 5000 Jahre Geschichte. Ein Fehler und du fängst von vorne an!</p>
+        <button class="btn" onclick="startQuiz()">Herausforderung annehmen</button>
+    </section>
+
+    <section class="info" id="info">
+        <div class="container">
+            <h2>Von den Dynastien bis zur Supermacht</h2>
+            <p>Die Fragen erscheinen in zufälliger Reihenfolge.</p>
+            <button class="btn" onclick="showNextQuestion()">Prüfung beginnen</button>
+        </div>
+    </section>
+
+    <section id="quiz-container"></section>
+
+    <section id="victory" class="victory-bg">
+        <h2>DER SIEG IST DEIN!</h2>
+        <p>Du hast China verstanden. Aber kennst du das Passwort des Vorsitzenden?</p>
+        <div id="lock-container" style="cursor: pointer; font-size: 4rem;" onclick="checkPin()">🔒</div>
+        <div id="secret-content" style="display: none; margin-top: 20px;">
+            <p>Geheimnis gelüftet.</p>
+            <a href="#" class="btn btn-secret">Nächste Mission</a>
+        </div>
+        <br>
+        <button class="btn" onclick="location.reload()">Neustart</button>
+    </section>
+
+    <script>
+        const questions = [
+            { q: "Wer war der erste Kaiser des geeinten Chinas?", a: ["Qin Shihuangdi", "Chin Lan", "Kublai Khan"], img: "https://th.bing.com/th/id/OIP.B6HoCOzwQwacxYLzfSejHQHaHq?w=198&h=205&c=7&r=0&o=7&pid=1.7&rm=3" },
+            { q: "In welchem Jahr wurde die Volksrepublik China ausgerufen?", a: ["1949", "1912", "1955"], img: "https://th.bing.com/th/id/OIP.wjN7jAdy5evtymlw1-AZogHaE7?w=251&h=180&c=7&r=0&o=7&pid=1.7&rm=3" },
+            { q: "Welche Dynastie baute den Großteil der heutigen Chinesischen Mauer?", a: ["Ming", "Tang", "Qin"], img: "https://th.bing.com/th/id/OIP.kEoiKVz2LCwZVT6SOsFBFAHaE7?w=266&h=180&c=7&r=0&o=7&pid=1.7&rm=3" },
+            { q: "Wie heißt die größte Hafenstadt Chinas?", a: ["Shanghai", "Peking", "Guangzhou"], img: "https://th.bing.com/th/id/OIP.8FfPqsUwWqmlpjdQGSsUmgHaE8?w=237&h=180&c=7&r=0&o=7&pid=1.7&rm=3" },
+            { q: "Welches Ereignis beendete 1912 die Kaiserzeit?", a: ["Xinhai-Revolution", "Boxeraufstand", "Langer Marsch"], img: "https://th.bing.com/th/id/OIP._E9Xa22S7JiGzeD-z5_9PQHaFD?w=263&h=180&c=7&r=0&o=7&pid=1.7&rm=3" },
+            { q: "Wer führte die wirtschaftliche Öffnung Chinas ab 1978 an?", a: ["Deng Xiaoping", "Mao Zedong", "Zhou Enlai"], img: "https://th.bing.com/th/id/OIP.uUfKBSuA18up4DyiBRM4JQHaJd?w=198&h=253&c=7&r=0&o=7&pid=1.7&rm=3" },
+            { q: "Welcher Fluss wird oft als 'Wiege der chinesischen Zivilisation' bezeichnet?", a: ["Gelber Fluss (Huang He)", "Jangtsekiang (Ling Ping)", "Perlfluss"], img: "https://static.ksta.de/__images/2024/02/26/0b7ad41a-4dd8-4af3-af82-6bbcd68d42d7.jpeg?q=75&q=70&rect=0,208,4000,2250&w=2000&h=5330&fm=jpeg&s=58a9d39ee4e0b6f29d41d2da215e2bbe" },
+            { q: "Was war das Hauptziel des 'Langen Marsches'?", a: ["Überleben der Kommunisten", "Eroberung Pekings", "Vertreibung der Briten"], img: "https://th.bing.com/th/id/OIP.DHhB8jTcDFMRnT6ApWJ-_gHaE5?w=232&h=180&c=7&r=0&o=7&pid=1.7&rm=3" },
+            { q: "Wie viele Terrakotta-Krieger wurden schätzungsweise in Xi'an gefunden?", a: ["ca. 8000", "ca. 1000", "ca. 25000"], img: "https://i.pinimg.com/originals/67/e3/6f/67e36f2c444aff956b7ed362528c0368.jpg" },
+            { q: "Welche Stadt war die Hauptstadt der Tang-Dynastie und Startpunkt der Seidenstraße?", a: ["Chang'an (Xi'an)", "Luoyang (Xi'un)", "Nanjing"], img: "https://th.bing.com/th/id/OIP.Heyb_yuZ0CnBN2OQkcaifgHaEK?w=322&h=181&c=7&r=0&o=7&pid=1.7&rm=3" },
+            { q: "Wie heißt das höchste Gebäude Chinas?", a: ["Shanghai Tower", "Ping An Finance Center", "Canton Tower"], img: "https://th.bing.com/th/id/R.6195b8f87ffadae87d4c4fa92a8771dc?rik=AH63lJyzXrtItg&riu=http%3a%2f%2fimages.china.cn%2fattachement%2fjpg%2fsite1003%2f20081128%2f00080287cf970a99f9e35c.jpg&ehk=KcmoP%2bWkzOMOMKqY%2fqBxKHQncrtkHB8kAzB9Sp4tpKk%3d&risl=&pid=ImgRaw&r=0" },
+            { q: "Welche Philosophie prägte das chinesische Staatswesen über Jahrhunderte?", a: ["Konfuzianismus", "Buddhismus", "Zen", "Lang' xi"], img: "https://th.bing.com/th/id/OIP.3dohex-rejx5sfOU_vrUjQHaF7?w=251&h=180&c=7&r=0&o=7&pid=1.7&rm=3" },
+            { q: "Was war die 'Verbotene Stadt'?", a: ["Kaiserpalast", "Ein Gefängnis", "Eine versunkene Stadt"], img: "https://thumbs.dreamstime.com/b/verbotene-stadt-peking-60045589.jpg" },
+            { q: "Wann fanden die ersten Olympischen Sommerspiele in Peking statt?", a: ["2008", "2000", "2012"], img: "https://www.fr.de/bilder/2021/11/09/91176657/27651882-peking-bei-den-olympischen-sommerspielen-2008-2cOPRFgsKofe.jpg" },
+            { q: "Welche Erfindung stammt NICHT aus dem alten China?", a: ["Dampfmaschine", "Kompass", "Schießpulver"], img: "https://interestingengineering.com/_next/image?url=https:%2F%2Fimages.interestingengineering.com%2Fimages%2Fchineseinventionsmixmain.jpg&w=1200&q=75" },
+            { q: "In welcher Provinz befinden sich die meisten Abschnitte der Mauer?", a: ["Hebei", "Sichuan", "Yunnan"], img: "https://th.bing.com/th/id/R.73b3aa0f7b661c1c7cc8e81096116b55?rik=i6Nyg4PUxMsItA&pid=ImgRaw&r=0" },
+            { q: "Wie hieß die letzte kaiserliche Dynastie?", a: ["Qing", "Ming", "Song"], img: "https://th.bing.com/th/id/R.7fdc9c4586560bea504affc1af2d139a?rik=zfXIhXQGK%2fX2OQ&pid=ImgRaw&r=0" },
+            { q: "Welche Sonderverwaltungszone wurde 1997 von Großbritannien zurückgegeben?", a: ["Hongkong", "Macau", "Taiwan"], img: "https://th.bing.com/th/id/R.ead952881c7780c8a3b9f9f50c10e8c1?rik=XWg9ParYUhburA&pid=ImgRaw&r=0" },
+            { q: "Was ist das bevölkerungsreichste Volk (Ethnie) in China?", a: ["Han", "Hui", "Mandschu"], img: "https://images.pexels.com/photos/11111352/pexels-photo-11111352.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2" },
+            { q: "Wie heißt der Drei-Schluchten-Damm am Jangtsekiang?", a: ["Sandouping", "Gezhouba", "Xiluodu"], img: "https://th.bing.com/th/id/R.a0b5f136976f6fbe4c8fbc772207dfc7?rik=ovEguZ1Op79lNg&riu=http%3a%2f%2fgerman.xinhuanet.com%2f2021-01%2f06%2f139645735_16099154887261n.png&ehk=mUkxSkF3lGHnYLDfl8s81rNOBQR%2feJHTtVfoB0xTLI0%3d&risl=&pid=ImgRaw&r=0" }
+        ];
+
+        let currentQuestionIndex = 0;
+        let shuffledQuestions = [];
+
+        function shuffle(array) {
+            return array.sort(() => Math.random() - 0.5);
+        }
+
+        function startQuiz() {
+            document.getElementById('hintergrundmusik').play();
+            document.getElementById('hero').style.display = 'none';
+            document.getElementById('info').style.display = 'flex';
+            shuffledQuestions = shuffle([...questions]);
+        }
+
+        function showNextQuestion() {
+            if (currentQuestionIndex >= shuffledQuestions.length) {
+                showVictory();
+                return;
+            }
+            const data = shuffledQuestions[currentQuestionIndex];
+            const container = document.getElementById('quiz-container');
+            container.style.display = 'flex';
+            container.style.backgroundImage = `linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url('${data.img || 'https://via.placeholder.com/1920x1080?text=China+Hintergrund'}')`;
+            
+            const correctAns = data.a[0];
+            const shuffledAns = shuffle([...data.a]);
+
+            container.innerHTML = `
+                <div class="container">
+                    <h2>Prüfung ${currentQuestionIndex + 1} / 20</h2>
+                    <p style="font-size: 1.5rem;">${data.q}</p>
+                    <div>
+                        ${shuffledAns.map(ans => `<button class="btn" onclick="checkAnswer('${ans}', '${correctAns}')">${ans}</button>`).join('')}
+                    </div>
+                </div>
+            `;
+            container.scrollIntoView();
+        }
+
+        function checkAnswer(selected, correct) {
+            if (selected === correct) {
+                currentQuestionIndex++;
+                showNextQuestion();
+            } else {
+                alert("Falsch! Zurück zum Start.");
+                location.reload();
+            }
+        }
+
+        function showVictory() {
+            document.getElementById('quiz-container').style.display = 'none';
+            document.getElementById('info').style.display = 'none';
+            document.getElementById('victory').style.display = 'flex';
+            document.getElementById('victory').scrollIntoView();
+        }
+
+        function checkPin() {
+            const pin = prompt("Geheimer PIN:");
+            if (pin === "Mao") {
+                const overlay = document.getElementById('mao-overlay');
+                overlay.style.display = 'block';
+                document.getElementById('lock-container').style.display = 'none';
+                document.getElementById('secret-content').style.display = 'block';
+                setTimeout(() => { overlay.style.display = 'none'; }, 3000);
+            } else { alert("Falsch! Du kriegst kein Chao long ba!"); }
+        }
+    </script>
+</body>
+</html>
